@@ -79,6 +79,10 @@ void eez_flow_init_fonts(const ext_font_desc_t *fonts, size_t numFonts);
 void eez_flow_set_create_screen_func(void (*createScreenFunc)(int screenIndex));
 void eez_flow_set_delete_screen_func(void (*deleteScreenFunc)(int screenIndex));
 
+// Copies map text; caller retains ownership of all input buffers.
+bool eez_flow_set_buttonmatrix_text(lv_obj_t *obj, uint32_t mapIndex, const char *text);
+bool eez_flow_set_buttonmatrix_map(lv_obj_t *obj, const char *const *map, uint32_t count, const void *ctrl);
+
 void eez_flow_tick();
 
 bool eez_flow_is_stopped();
