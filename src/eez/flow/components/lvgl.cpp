@@ -1308,6 +1308,46 @@ ACTION_END
 
 ////////////////////////////////////////////////////////////////////////////////
 
+ACTION_START(buttonMatrixGetButtonText)
+    WIDGET_PROP(obj);
+#if LVGL_VERSION_MAJOR >= 9
+    if (!lv_obj_check_type(obj, &lv_buttonmatrix_class)) {
+#else
+    if (!lv_obj_check_type(obj, &lv_btnmatrix_class)) {
+#endif
+        throwError(flowState, componentIndex, FlowError::Plain("Expected a ButtonMatrix widget"));
+        return;
+    }
+    INT32_PROP(buttonID);
+    const char *text = nullptr;
+    // Validate before narrowing to v8's uint16_t or calling its getter at count.
+    // Use public APIs; row markers do not contribute to button IDs.
+    if (buttonID >= 0 && buttonID < UINT16_MAX) {
+#if LVGL_VERSION_MAJOR >= 9
+        const char *const *map = lv_buttonmatrix_get_map(obj);
+#else
+        const char *const *map = lv_btnmatrix_get_map(obj);
+#endif
+        int32_t count = 0;
+        for (uint32_t i = 0; map && map[i] && map[i][0]; i++) {
+            if (strcmp(map[i], "\n") != 0) count++;
+        }
+        if (buttonID < count) {
+#if LVGL_VERSION_MAJOR >= 9
+            text = lv_buttonmatrix_get_button_text(obj, (uint32_t)buttonID);
+#else
+            text = lv_btnmatrix_get_btn_text(obj, (uint16_t)buttonID);
+#endif
+        }
+    }
+    Value textCopy = Value::makeStringRef(text ? text : "", -1, 0x6f2c01a2);
+    if (!textCopy.isString()) {
+        throwError(flowState, componentIndex, FlowError::Plain("Failed to copy button text"));
+        return;
+    }
+    RESULT(result, textCopy);
+ACTION_END
+
 ACTION_START(buttonMatrixSetMap)
     WIDGET_PROP(obj);
 #if LVGL_VERSION_MAJOR >= 9
@@ -1459,7 +1499,8 @@ static ActionType actions[] = {
     /* 69 */ &textareaSetPasswordBullet,
     /* 70 */ &textareaSetPlaceholderText,
     /* 71 */ &buttonMatrixGetSelectedButton,
-    /* 72 */ &buttonMatrixSetMap
+    /* 72 */ &buttonMatrixSetMap,
+    /* 73 */ &buttonMatrixGetButtonText
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1489,6 +1530,10 @@ void executeLVGLApiComponent(FlowState *flowState, unsigned componentIndex) {
         }
         if (actionType->action == 72 && (actionType->properties.count % 2 != 1 || actionType->properties.count / 2 >= UINT16_MAX)) {
             throwError(flowState, componentIndex, FlowError::Plain("Invalid ButtonMatrix map properties"));
+            return;
+        }
+        if (actionType->action == 73 && actionType->properties.count != 3) {
+            throwError(flowState, componentIndex, FlowError::Plain("Invalid LVGL action properties"));
             return;
         }
         (*actions[actionType->action])(flowState, componentIndex, actionType->properties, actionIndex);
