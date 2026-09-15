@@ -1353,6 +1353,9 @@ ACTION_START(buttonMatrixSetMap)
             valid = false;
             break;
         }
+        // Match STR_PROP: expressions for string properties use Value::toString.
+        // Store the converted Value as well, not just a pointer to a temporary.
+        text = text.toString(0x6f2c01b2);
         if (!text.isString() || !text.getString()) {
             valid = false;
             break;
